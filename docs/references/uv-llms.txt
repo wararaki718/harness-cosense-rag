@@ -1,0 +1,1 @@
+Reference for LLMs regarding uv (Python package manager) usage.
