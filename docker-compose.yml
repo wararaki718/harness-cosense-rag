@@ -1,0 +1,71 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - rag-network
+
+  splade-api:
+    build: ./splade-api
+    container_name: splade-api
+    ports:
+      - "8001:8001"
+    networks:
+      - rag-network
+    depends_on:
+      - elasticsearch
+
+  batch:
+    build: ./batch
+    container_name: batch
+    networks:
+      - rag-network
+    depends_on:
+      - elasticsearch
+      - splade-api
+
+  llm-api:
+    build: ./llm-api
+    container_name: llm-api
+    ports:
+      - "8002:8002"
+    networks:
+      - rag-network
+
+  search-api:
+    build: ./search-api
+    container_name: search-api
+    ports:
+      - "8000:8000"
+    networks:
+      - rag-network
+    depends_on:
+      - elasticsearch
+      - splade-api
+      - llm-api
+
+  ui:
+    build: ./ui
+    container_name: ui
+    ports:
+      - "3000:3000"
+    networks:
+      - rag-network
+    depends_on:
+      - search-api
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  es_data:
+    driver: local
